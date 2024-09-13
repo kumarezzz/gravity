@@ -1,10 +1,15 @@
 pipeline {
     agent any
 
+    parameters {
+        booleanParam(name: 'autoApprove', defaultValue: false, description: 'Automatically approve destroy without manual confirmation?')
+        choice(name: 'action', choices: ["Destroy"], description: 'Choose the action to perform')
+    }
+
     environment {
         AWS_REGION = 'us-east-1'
-        AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
     }
 
     stages {
@@ -14,62 +19,51 @@ pipeline {
             }
         }
 
-       stage('Build Docker Image') {
+        stage('Install Terraform') {
             steps {
                 script {
-                    writeFile file: 'Dockerfile', text: '''
-                    FROM hashicorp/terraform:latest
-                    # RUN apt-get update && apt-get install -y <other-tools>
-                    WORKDIR /workspace
-                    COPY . /workspace
-                    '''
-                    docker.build('terraform-image', '-f Dockerfile .')
-                }
-            }
-        }
-    
-        stage('Terraform Init and Apply') {
-            steps {
-                script {
-                    docker.image("terraform-image").inside {
-                        sh '''
-                            echo "Initializing Terraform..."
-                            terraform init
-
-                            echo "Applying Terraform configuration..."
-                            terraform apply -auto-approve
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Deploy Application') {
-            steps {
-                script {
-                    docker.image("terraform-image").inside {
-                        sh '''
-                            echo "Running deployment script..."
-                            chmod +x scripts.sh
-                            ./scripts.sh
-                        '''
-                    }
                     sh '''
-                        echo "Building and running application Docker container..."
-                        docker build -t webserver .
-                        docker run -d --name gravity-webserver -p 8081:80 webserver
+                        chmod +x ./install_terraform.sh
+                        ./install_terraform.sh
                     '''
                 }
             }
         }
-    }
 
-    post {
-        success {
-            echo 'Pipeline succeeded!'
+        stage('Terraform Init') {
+            steps {
+                sh 'terraform init'
+            }
         }
-        failure {
-            echo 'Pipeline failed!'
+
+        stage('Terraform Plan') {
+            steps {
+                sh 'terraform plan'
+            }
+        }
+
+        stage('Terraform Apply') {
+            when {
+                expression { params.action == 'Apply' }
+            }
+            steps {
+                script {
+                    def autoApproveFlag = params.autoApprove ? '-auto-approve' : ''
+                    sh "terraform apply ${autoApproveFlag} "
+                }
+            }
+        }
+
+        stage('Terraform Destroy') {
+            when {
+                expression { params.action == 'Destroy' }
+            }
+            steps {
+                script {
+                    def autoApproveFlag = params.autoApprove ? '-auto-approve' : ''
+                    sh "terraform destroy ${autoApproveFlag} "
+                }
+            }
         }
     }
 }
