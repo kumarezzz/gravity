@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     parameters {
-        booleanParam(name: 'autoApprove', defaultValue: false, description: 'Automatically approve destroy without manual confirmation?')
-        choice(name: 'action', choices: ["Destroy"], description: 'Choose the action to perform')
+        booleanParam(name: 'autoApprove', defaultValue: false, description: 'Automatically approve apply/destroy without manual confirmation?')
+        choice(name: 'action', choices: ['Apply', 'Destroy'], description: 'Choose the action to perform')
     }
 
     environment {
@@ -49,7 +49,12 @@ pipeline {
             steps {
                 script {
                     def autoApproveFlag = params.autoApprove ? '-auto-approve' : ''
-                    sh "terraform apply ${autoApproveFlag} "
+                    if (autoApproveFlag) {
+                        sh "terraform apply ${autoApproveFlag}"
+                    } else {
+                        input message: 'Do you want to approve the Terraform Apply?', ok: 'Yes'
+                        sh "terraform apply"
+                    }
                 }
             }
         }
@@ -61,7 +66,12 @@ pipeline {
             steps {
                 script {
                     def autoApproveFlag = params.autoApprove ? '-auto-approve' : ''
-                    sh "terraform destroy ${autoApproveFlag} "
+                    if (autoApproveFlag) {
+                        sh "terraform destroy ${autoApproveFlag}"
+                    } else {
+                        input message: 'Do you want to approve the Terraform Destroy?', ok: 'Yes'
+                        sh "terraform destroy"
+                    }
                 }
             }
         }
