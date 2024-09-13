@@ -76,7 +76,7 @@ resource "local_file" "private-key" {
 
 resource "aws_instance" "ec2" {
   ami                         = "ami-0a0e5d9c7acc336f1"
-  instance_type               = "t2.micro"
+  instance_type               = "t2.medium"
   subnet_id                   = aws_subnet.pub-subnet.id
   associate_public_ip_address = true
   key_name                    = aws_key_pair.key_pair.key_name
@@ -134,6 +134,13 @@ resource "aws_security_group" "allow_ssh" {
     description = "ssh"
     from_port   = 22
     to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+   ingress {
+    description = "ssh"
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
