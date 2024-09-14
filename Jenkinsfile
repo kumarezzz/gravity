@@ -106,7 +106,7 @@ pipeline {
 
                     sh """
                         chmod 400 ${PRIVATE_KEY_PATH}
-                        ssh -o StrictHostKeyChecking=no -i ${PRIVATE_KEY_PATH} ubuntu@${instancePublicIp} << EOF
+                        ssh -o StrictHostKeyChecking=no -i ${PRIVATE_KEY_PATH} ubuntu@${instancePublicIp}
                             sudo apt-get update
                             sudo apt-get install -y docker.io
                             sudo chmod 777 /var/run/docker.sock
@@ -115,7 +115,6 @@ pipeline {
                             git clone https://github.com/kumarezzz/gravity.git
                             cd gravity
                             docker build -t my-apache-app .
-                        EOF
                     """
                 }
             }
@@ -133,10 +132,9 @@ pipeline {
 
                     sh """
                         chmod 400 ${PRIVATE_KEY_PATH}
-                        ssh -o StrictHostKeyChecking=no -i ${PRIVATE_KEY_PATH} ubuntu@${instancePublicIp} << EOF
+                        ssh -o StrictHostKeyChecking=no -i ${PRIVATE_KEY_PATH} ubuntu@${instancePublicIp}
                             # Run the Docker container from the built image, exposing port 8090
                             docker run -d -p 8090:8090 --name my-running-app my-apache-app
-                        EOF
                     """
                 }
             }
