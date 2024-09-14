@@ -10,7 +10,7 @@ pipeline {
         AWS_REGION = 'us-east-1'
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        PRIVATE_KEY_PATH = '/var/lib/jenkins/workspace/gravity/my-key-pair.pem' 
+        PRIVATE_KEY_PATH = '/var/lib/jenkins/workspace/gravity/my-key-pair.pem'
     }
 
     stages {
@@ -107,19 +107,36 @@ pipeline {
                     sh """
                         chmod 400 ${PRIVATE_KEY_PATH}
                         ssh -o StrictHostKeyChecking=no -i ${PRIVATE_KEY_PATH} ubuntu@${instancePublicIp} << EOF
-                            # Install Docker
                             sudo apt-get update
                             sudo apt-get install -y docker.io
                             sudo chmod 777 /var/run/docker.sock
-                            
-                            # Start Docker
                             sudo systemctl start docker
-                            sudo systemctl enable docker
-                            
-                            # Clone the repository and build the Docker image
+                            sudo systemctl enable docker                        
                             git clone https://github.com/kumarezzz/gravity.git
                             cd gravity
                             docker build -t my-apache-app .
+                        EOF
+                    """
+                }
+            }
+        }
+
+        stage('Create and Start Docker Container') {
+            when {
+                expression { return env.DOCKER_STAGE_EXECUTE == 'true' }
+            }
+            steps {
+                script {
+                    def instancePublicIp = sh(script: 'terraform output -raw ec2_instance_publicip', returnStdout: true).trim()
+                    
+                    echo "Creating and starting Docker container on Instance Public IP: ${instancePublicIp}"
+
+                    sh """
+                        chmod 400 ${PRIVATE_KEY_PATH}
+                        ssh -o StrictHostKeyChecking=no -i ${PRIVATE_KEY_PATH} ubuntu@${instancePublicIp} << EOF
+                            # Run the Docker container from the built image, exposing port 8090
+                            docker run -d -p 8090:8090 --name my-running-app my-apache-app
+                        EOF
                     """
                 }
             }
