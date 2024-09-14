@@ -107,15 +107,25 @@ pipeline {
                     sh """
                         chmod 400 ${PRIVATE_KEY_PATH}
                         ssh -o StrictHostKeyChecking=no -i ${PRIVATE_KEY_PATH} ubuntu@${instancePublicIp}
-                            sudo apt-get update
-                            sudo apt-get install -y docker.io
-                            sudo chmod 777 /var/run/docker.sock
-                            sudo systemctl start docker
-                            sudo systemctl enable docker                        
-                            git clone https://github.com/kumarezzz/gravity.git
-                            cd gravity
-                            docker build -t my-apache-app .
-                    """
+    if ! command -v docker &> /dev/null
+    then
+        echo "Docker is not installed. Installing Docker..."
+        sudo apt-get update
+        sudo apt-get install -y docker.io
+        sudo chmod 777 /var/run/docker.sock
+        sudo systemctl start docker
+        sudo systemctl enable docker
+    else
+        echo "Docker is already installed"
+    fi
+    if [ -d "gravity" ]; then
+        echo "'gravity' directory exists. Removing it..."
+        rm -rf gravity
+    fi
+    git clone https://github.com/kumarezzz/gravity.git
+    cd gravity
+    docker build -t my-apache-app .
+    """
                 }
             }
         }
