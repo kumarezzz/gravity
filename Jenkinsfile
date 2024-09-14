@@ -143,7 +143,8 @@ pipeline {
                     sh """
                         chmod 400 ${PRIVATE_KEY_PATH}
                         ssh -o StrictHostKeyChecking=no -i ${PRIVATE_KEY_PATH} ubuntu@${instancePublicIp}
-                            docker container prune -a
+                            docker container prune -f
+                            docker rm -f my-running-app
                             docker run -d -p 8090:8090 --name my-running-app my-apache-app
                     """
                 }
