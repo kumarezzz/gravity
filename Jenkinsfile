@@ -133,7 +133,6 @@ pipeline {
                     sh """
                         chmod 400 ${PRIVATE_KEY_PATH}
                         ssh -o StrictHostKeyChecking=no -i ${PRIVATE_KEY_PATH} ubuntu@${instancePublicIp}
-                            # Run the Docker container from the built image, exposing port 8090
                             docker run -d -p 8090:8090 --name my-running-app my-apache-app
                     """
                 }
