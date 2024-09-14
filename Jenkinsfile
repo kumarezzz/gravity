@@ -10,7 +10,7 @@ pipeline {
         AWS_REGION = 'us-east-1'
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        PRIVATE_KEY_PATH = '/var/lib/jenkins/workspace/gravity/my-key-pair.pem'  // Path to the private key
+        PRIVATE_KEY_PATH = '/var/lib/jenkins/workspace/gravity/my-key-pair.pem' 
     }
 
     stages {
@@ -82,7 +82,6 @@ pipeline {
         stage('Debug Terraform Output') {
             steps {
                 script {
-                    // Print the instance public IP to debug
                     def instancePublicIp = sh(script: 'terraform output -raw ec2_instance_publicip', returnStdout: true).trim()
                     echo "Instance Public IP: ${instancePublicIp}"
                 }
@@ -101,13 +100,10 @@ pipeline {
             }
             steps {
                 script {
-                    // Get the instance public IP from Terraform output
                     def instancePublicIp = sh(script: 'terraform output -raw ec2_instance_publicip', returnStdout: true).trim()
                     
-                    // Debugging step to verify public IP
                     echo "Instance Public IP: ${instancePublicIp}"
 
-                    // Ensure private key permissions and SSH command
                     sh """
                         chmod 400 ${PRIVATE_KEY_PATH}
                         ssh -o StrictHostKeyChecking=no -i ${PRIVATE_KEY_PATH} ubuntu@${instancePublicIp} << EOF
